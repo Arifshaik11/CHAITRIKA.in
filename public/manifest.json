@@ -1,0 +1,48 @@
+{
+  "short_name": "Chaitra Wrap & Wear",
+  "name": "Chaitra Wrap & Wear - Personalized Photo Frames",
+  "description": "Premium personalized photo frames, acrylic frames, MDF frames, magnetic frames & custom keychains. Preserve your precious memories in style.",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0F172A",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#0F172A",
+  "categories": ["shopping", "lifestyle"],
+  "screenshots": [
+    {
+      "src": "/screenshot-540x720.png",
+      "sizes": "540x720",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/screenshot-1280x720.png",
+      "sizes": "1280x720",
+      "form_factor": "wide"
+    }
+  ]
+}

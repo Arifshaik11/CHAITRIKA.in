@@ -1,0 +1,21 @@
+# Dependency directories
+node_modules/
+
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+*.env
+
+# Build output
+dist/
+dist-ssr/
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE & OS
+.DS_Store
+Thumbs.db
+.vscode/

@@ -1,0 +1,26 @@
+# Allow all bots to crawl the site
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/panel
+
+# Sitemap location
+Sitemap: https://chaitrika.in/sitemap.xml
+
+# Crawl delay for all bots (in seconds)
+Crawl-delay: 1
+
+# Allow specific search engine bots
+User-agent: Googlebot
+Allow: /
+Disallow: /admin
+Disallow: /admin/panel
+
+User-agent: Bingbot
+Allow: /
+Disallow: /admin
+Disallow: /admin/panel
+
+# Prevent crawling of specific paths
+User-agent: *
+Disallow: /checkout

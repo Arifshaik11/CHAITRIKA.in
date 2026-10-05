@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/apple-touch-icon.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0F172A" />
+    <meta name="description" content="Chaitra Wrap &amp; Wear — Premium personalized photo frames, acrylic frames, MDF frames, magnetic frames &amp; custom keychains. Preserve your precious memories in style." />
+    <meta name="keywords" content="personalized photo frames, custom keychains, acrylic frames, MDF frames, magnetic photo frames, custom gifts, memory gifts, Hyderabad" />
+    <meta name="robots" content="index, follow" />
+    <meta name="language" content="English" />
+    <meta name="revisit-after" content="7 days" />
+    <meta name="author" content="Chaitra Wrap &amp; Wear" />
+    <meta property="og:title" content="Chaitra Wrap &amp; Wear — Preserve Your Precious Memories" />
+    <meta property="og:description" content="Premium personalized gifts crafted with love. Custom photo frames, acrylic displays &amp; keychains." />
+    <meta property="og:image" content="https://chaitrika.in/og-image.jpg" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://chaitrika.in" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Chaitra Wrap &amp; Wear — Preserve Your Precious Memories" />
+    <meta name="twitter:description" content="Premium personalized gifts crafted with love." />
+    <link rel="canonical" href="https://chaitrika.in" />
+    <title>Chaitra Wrap &amp; Wear — Preserve Your Precious Memories</title>
+
+    <!-- Google Fonts: Playfair Display + Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: '#C9897A',
+              accent: '#C9897A',
+              'accent-light': '#F2E8E5',
+              'ink': '#111111',
+              'ink-soft': '#444444',
+              'ink-muted': '#888888',
+              'surface': '#F8F8F8',
+              'border-soft': '#EBEBEB',
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              display: ['"Playfair Display"', 'Georgia', 'serif'],
+            },
+            borderRadius: {
+              DEFAULT: '10px',
+              lg: '12px',
+              xl: '16px',
+              '2xl': '20px',
+            },
+            boxShadow: {
+              card: '0 2px 16px rgba(0,0,0,0.06)',
+              'card-hover': '0 8px 32px rgba(0,0,0,0.10)',
+              soft: '0 1px 4px rgba(0,0,0,0.05)',
+              'soft-lg': '0 4px 20px rgba(0,0,0,0.08)',
+            },
+            animation: {
+              'fade-up': 'fadeUp 0.7s ease forwards',
+              'fade-in': 'fadeIn 0.6s ease forwards',
+            },
+            keyframes: {
+              fadeUp: {
+                '0%': { opacity: '0', transform: 'translateY(24px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+            },
+          }
+        }
+      }
+    </script>
+    <style>
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        background: #FFFFFF;
+        color: #111111;
+        font-family: 'Inter', sans-serif;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar { width: 5px; }
+      ::-webkit-scrollbar-track { background: #F8F8F8; }
+      ::-webkit-scrollbar-thumb { background: #C9897A; border-radius: 10px; }
+      ::selection { background: rgba(201,137,122,0.18); color: #111111; }
+
+      /* Typography utilities */
+      .font-display { font-family: 'Playfair Display', Georgia, serif; }
+
+      /* Animations */
+      @keyframes fadeUp {
+        0%   { opacity: 0; transform: translateY(24px); }
+        100% { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes fadeIn {
+        0%   { opacity: 0; }
+        100% { opacity: 1; }
+      }
+      @keyframes scaleIn {
+        0%   { opacity: 0; transform: scale(0.97); }
+        100% { opacity: 1; transform: scale(1); }
+      }
+
+      .animate-fade-up   { animation: fadeUp  0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+      .animate-fade-in   { animation: fadeIn  0.6s ease both; }
+      .animate-scale-in  { animation: scaleIn 0.5s ease both; }
+
+      /* Delay utilities */
+      .delay-100 { animation-delay: 0.1s; }
+      .delay-200 { animation-delay: 0.2s; }
+      .delay-300 { animation-delay: 0.3s; }
+      .delay-400 { animation-delay: 0.4s; }
+
+      /* Clean divider */
+      .divider {
+        height: 1px;
+        background: #EBEBEB;
+      }
+
+      /* Accent underline for links */
+      .link-accent {
+        position: relative;
+        display: inline-block;
+      }
+      .link-accent::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 0;
+        height: 1px;
+        background: #C9897A;
+        transition: width 0.3s ease;
+      }
+      .link-accent:hover::after { width: 100%; }
+
+      /* Black luxury button */
+      .btn-primary {
+        display: inline-block;
+        background: #111111;
+        color: #FFFFFF;
+        padding: 14px 32px;
+        border-radius: 10px;
+        font-family: 'Inter', sans-serif;
+        font-size: 15px;
+        font-weight: 500;
+        letter-spacing: 0.02em;
+        cursor: pointer;
+        border: none;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        text-decoration: none;
+      }
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+      }
+
+      /* Outline button */
+      .btn-outline {
+        display: inline-block;
+        background: transparent;
+        color: #111111;
+        padding: 13px 32px;
+        border-radius: 10px;
+        font-family: 'Inter', sans-serif;
+        font-size: 15px;
+        font-weight: 500;
+        letter-spacing: 0.02em;
+        cursor: pointer;
+        border: 1.5px solid #111111;
+        transition: background 0.3s ease, transform 0.3s ease;
+        text-decoration: none;
+      }
+      .btn-outline:hover {
+        background: #111111;
+        color: #FFFFFF;
+        transform: translateY(-2px);
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+  </body>
+</html>
