@@ -216,9 +216,7 @@ CREATE POLICY "public_read_categories" ON categories
   FOR SELECT USING (active = true);
 
 CREATE POLICY "admin_manage_categories" ON categories
-  FOR ALL USING (auth.jwt() ->> 'role' = 'admin' OR auth.uid() IN (
-    SELECT id FROM auth.users WHERE raw_user_meta_data ->> 'role' = 'admin'
-  ));
+  FOR ALL USING (auth.jwt() ->> 'role' = 'admin');
 
 -- ============================================
 -- PRODUCTS - PUBLIC READ, ADMIN WRITE
@@ -228,9 +226,7 @@ CREATE POLICY "public_read_products" ON products
     category_id IN (SELECT id FROM categories WHERE active = true));
 
 CREATE POLICY "admin_manage_products" ON products
-  FOR ALL USING (auth.jwt() ->> 'role' = 'admin' OR auth.uid() IN (
-    SELECT id FROM auth.users WHERE raw_user_meta_data ->> 'role' = 'admin'
-  ));
+  FOR ALL USING (auth.jwt() ->> 'role' = 'admin');
 
 -- ============================================
 -- PRODUCT_OPTIONS - PUBLIC READ, ADMIN WRITE
