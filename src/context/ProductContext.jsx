@@ -442,14 +442,28 @@ export const ProductProvider = ({ children }) => {
         }
 
         console.log('Product deleted successfully from Supabase');
+        
+        // Refresh all products from database to ensure complete sync
+        try {
+          const { data, error: fetchErr } = await supabase.from('products').select('*');
+          if (!fetchErr && data) {
+            setProducts(data);
+            localStorage.setItem('chaitrika_products', JSON.stringify(data));
+            console.log('Products refreshed after deletion');
+          }
+        } catch (refreshErr) {
+          console.warn('Could not refresh products after deletion:', refreshErr);
+        }
+      } else {
+        // Local fallback - just remove from state
+        setProducts((prev) => {
+          const updated = prev.filter((product) => product.id !== id);
+          localStorage.setItem('chaitrika_products', JSON.stringify(updated));
+          return updated;
+        });
       }
 
-      // Remove from React state and localStorage
-      setProducts((prev) => {
-        const updated = prev.filter((product) => product.id !== id);
-        localStorage.setItem('chaitrika_products', JSON.stringify(updated));
-        return updated;
-      });
+      // Remove from wishlist and comparison
       setWishlist((prev) => prev.filter((item) => item !== id));
       setComparisonList((prev) => prev.filter((item) => item.id !== id));
     } catch (err) {

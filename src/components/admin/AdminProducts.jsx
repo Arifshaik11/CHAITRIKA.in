@@ -154,6 +154,9 @@ const AdminProducts = () => {
 
     try {
       await deleteProduct(productId);
+      alert('Product deleted successfully!');
+      // The product is already removed from state by deleteProduct(),
+      // so the UI updates automatically via React state change
     } catch (err) {
       console.error('Delete error:', err);
       alert(`Failed to delete product: ${err.message || 'Unknown error'}`);

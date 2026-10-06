@@ -10,7 +10,24 @@ import { supabase } from '../supabase';
 export const uploadImage = async (file, bucket = 'product-images', path = '') => {
   try {
     if (!supabase) {
-      throw new Error('Supabase not configured');
+      console.warn('Supabase not configured, falling back to Data URL for image upload');
+      return new Promise((resolve) => {
+        if (!file) {
+          return resolve({ url: null, path: null, error: 'No file provided' });
+        }
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          resolve({
+            url: reader.result,
+            path: `local-${Date.now()}`,
+            error: null,
+          });
+        };
+        reader.onerror = () => {
+          resolve({ url: null, path: null, error: 'Failed to read image file' });
+        };
+        reader.readAsDataURL(file);
+      });
     }
 
     // Validate file
