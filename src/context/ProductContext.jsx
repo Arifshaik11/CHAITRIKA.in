@@ -60,12 +60,15 @@ export const ProductProvider = ({ children }) => {
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
-  // Fetch ALL products from Supabase with localStorage & defaultProducts fallback
+  // Fetch ALL products from Supabase — the database is the source of truth
   const fetchProducts = async () => {
     try {
+      setLoading(true);
+
       if (!supabase) {
         const cached = localStorage.getItem('chaitrika_products');
         setProducts(cached ? JSON.parse(cached) : defaultProducts);
+        setLoading(false);
         return;
       }
 
@@ -80,14 +83,11 @@ export const ProductProvider = ({ children }) => {
         throw fetchError;
       }
 
-      if (data) {
-        console.log('Products loaded from Supabase:', data.length, 'items');
-        setProducts(data);
-        localStorage.setItem('chaitrika_products', JSON.stringify(data));
-      } else {
-        const cached = localStorage.getItem('chaitrika_products');
-        setProducts(cached ? JSON.parse(cached) : defaultProducts);
-      }
+      // Supabase is the source of truth — even if data is empty, use it
+      const freshProducts = data || [];
+      console.log('Products loaded from Supabase:', freshProducts.length, 'items');
+      setProducts(freshProducts);
+      localStorage.setItem('chaitrika_products', JSON.stringify(freshProducts));
       setLoading(false);
     } catch (err) {
       console.error('Error fetching from Supabase, trying localStorage/defaultProducts:', err.message);
@@ -416,27 +416,41 @@ export const ProductProvider = ({ children }) => {
   const deleteProduct = async (id) => {
     try {
       // IMPORTANT: Do NOT remove from state before confirming Supabase deletion
-      // This is the root cause of the bug: items disappear from UI but stay in DB
       
       if (supabase && !String(id).startsWith('prod_')) {
         console.log('Deleting product from Supabase:', id);
 
-        // Delete the main product record FIRST (cascade will handle related tables)
+        // Delete the main product record (cascade will handle related tables)
         const { error: deleteError } = await supabase
           .from('products')
           .delete()
           .eq('id', id);
 
-        // Check for deletion error BEFORE updating React state
+        // Check for explicit deletion error
         if (deleteError) {
           console.error('Supabase DELETE failed:', deleteError);
           throw new Error(`Delete failed: ${deleteError.message}`);
         }
 
+        // VERIFY the row is actually gone (RLS can silently block deletes with no error)
+        const { data: checkRow, error: checkError } = await supabase
+          .from('products')
+          .select('id')
+          .eq('id', id)
+          .maybeSingle();
+
+        if (checkError) {
+          console.warn('Could not verify deletion:', checkError.message);
+        } else if (checkRow) {
+          // Row still exists — deletion was silently blocked (likely RLS)
+          console.error('Product still exists after DELETE — RLS policy is blocking the delete');
+          throw new Error('Delete was blocked by database permissions. Please check Supabase RLS policies for the products table.');
+        }
+
         console.log('Product successfully deleted from Supabase');
       }
 
-      // Only remove from React state AFTER successful Supabase deletion
+      // Only remove from React state AFTER confirmed Supabase deletion
       setProducts((prev) => {
         const updated = prev.filter((product) => String(product.id) !== String(id));
         localStorage.setItem('chaitrika_products', JSON.stringify(updated));

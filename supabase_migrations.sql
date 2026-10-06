@@ -218,6 +218,20 @@ CREATE POLICY "public_read_categories" ON categories
 CREATE POLICY "admin_manage_categories" ON categories
   FOR ALL USING (auth.uid() IS NOT NULL);
 
+-- Allow anon role to manage categories (needed because admin panel
+-- uses anon key without Supabase Auth, so auth.uid() is NULL)
+CREATE POLICY "anon_select_all_categories" ON categories
+  FOR SELECT USING (true);
+
+CREATE POLICY "anon_insert_categories" ON categories
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "anon_update_categories" ON categories
+  FOR UPDATE USING (true);
+
+CREATE POLICY "anon_delete_categories" ON categories
+  FOR DELETE USING (true);
+
 -- ============================================
 -- PRODUCTS - PUBLIC READ, ADMIN WRITE
 -- ============================================
@@ -227,6 +241,20 @@ CREATE POLICY "public_read_products" ON products
 
 CREATE POLICY "admin_manage_products" ON products
   FOR ALL USING (auth.uid() IS NOT NULL);
+
+-- Allow anon role to manage products (needed because admin panel
+-- uses anon key without Supabase Auth, so auth.uid() is NULL)
+CREATE POLICY "anon_select_all_products" ON products
+  FOR SELECT USING (true);
+
+CREATE POLICY "anon_insert_products" ON products
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "anon_update_products" ON products
+  FOR UPDATE USING (true);
+
+CREATE POLICY "anon_delete_products" ON products
+  FOR DELETE USING (true);
 
 -- ============================================
 -- PRODUCT_OPTIONS - PUBLIC READ, ADMIN WRITE

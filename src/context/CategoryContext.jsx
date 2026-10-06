@@ -23,11 +23,14 @@ export const CategoryProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Fetch all categories from Supabase (PRIMARY) with localStorage fallback
+  // Fetch all categories from Supabase — the database is the source of truth
   const fetchCategories = async () => {
     try {
+      setLoading(true);
+
       if (!supabase) {
         console.warn('Supabase not configured');
+        setLoading(false);
         return;
       }
 
@@ -42,10 +45,11 @@ export const CategoryProvider = ({ children }) => {
         throw fetchError;
       }
 
-      console.log('Categories loaded from Supabase:', data?.length || 0, 'items');
-      const loaded = data || [];
-      setCategories(loaded);
-      localStorage.setItem('chaitrika_categories', JSON.stringify(loaded));
+      // Supabase is the source of truth — even if data is empty, use it
+      const freshCategories = data || [];
+      console.log('Categories loaded from Supabase:', freshCategories.length, 'items');
+      setCategories(freshCategories);
+      localStorage.setItem('chaitrika_categories', JSON.stringify(freshCategories));
       setLoading(false);
     } catch (err) {
       console.error('Error fetching from Supabase, trying localStorage:', err.message);
@@ -219,16 +223,31 @@ export const CategoryProvider = ({ children }) => {
           .delete()
           .eq('id', id);
 
-        // Check for deletion error BEFORE updating React state
+        // Check for explicit deletion error
         if (deleteError) {
           console.error('Supabase DELETE failed:', deleteError);
           throw new Error(`Delete failed: ${deleteError.message}`);
         }
 
+        // VERIFY the row is actually gone (RLS can silently block deletes with no error)
+        const { data: checkRow, error: checkError } = await supabase
+          .from('categories')
+          .select('id')
+          .eq('id', id)
+          .maybeSingle();
+
+        if (checkError) {
+          console.warn('Could not verify deletion:', checkError.message);
+        } else if (checkRow) {
+          // Row still exists — deletion was silently blocked (likely RLS)
+          console.error('Category still exists after DELETE — RLS policy is blocking the delete');
+          throw new Error('Delete was blocked by database permissions. Please check Supabase RLS policies for the categories table.');
+        }
+
         console.log('Category successfully deleted from Supabase');
       }
 
-      // Only remove from React state AFTER successful Supabase deletion
+      // Only remove from React state AFTER confirmed Supabase deletion
       const updated = categories.filter(c => c.id !== id);
       setCategories(updated);
       localStorage.setItem('chaitrika_categories', JSON.stringify(updated));
