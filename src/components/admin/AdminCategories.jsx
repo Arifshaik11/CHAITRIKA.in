@@ -87,6 +87,7 @@ const AdminCategories = () => {
 
     try {
       await deleteCategory(categoryId);
+      alert('Category deleted successfully!');
     } catch (err) {
       alert(`Failed to delete category: ${err.message}`);
     }

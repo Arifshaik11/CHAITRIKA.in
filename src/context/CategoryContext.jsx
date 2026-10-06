@@ -217,6 +217,20 @@ export const CategoryProvider = ({ children }) => {
             .eq('id', id);
 
           if (!deleteError) {
+            // Refresh all categories from database to ensure complete sync
+            try {
+              const { data, error: fetchErr } = await supabase.from('categories').select('*');
+              if (!fetchErr && data) {
+                setCategories(data);
+                localStorage.setItem('chaitrika_categories', JSON.stringify(data));
+                console.log('Categories refreshed after deletion');
+                return;
+              }
+            } catch (refreshErr) {
+              console.warn('Could not refresh categories after deletion:', refreshErr);
+            }
+
+            // Fallback: manually remove from state
             const updated = categories.filter(c => c.id !== id);
             setCategories(updated);
             localStorage.setItem('chaitrika_categories', JSON.stringify(updated));
