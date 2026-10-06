@@ -5,7 +5,7 @@ import { useAdminAuth } from '../context/AdminAuthContext';
 import { FiUser, FiLock, FiShield, FiAlertCircle, FiInfo } from 'react-icons/fi';
 
 export default function AdminLogin() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   
@@ -23,7 +23,7 @@ export default function AdminLogin() {
     e.preventDefault();
     setLoading(true);
 
-    const success = await adminLogin(username, password);
+    const success = await adminLogin(email, password);
     
     setLoading(false);
 
@@ -70,18 +70,18 @@ export default function AdminLogin() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-[#1C1917] block mb-2">
-                Username
+                Email Address
               </label>
               <div className="relative">
                 <FiUser className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8A8580] w-4 h-4" />
                 <input
-                  type="text"
+                  type="email"
                   required
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   disabled={loading || authLoading}
                   className="w-full pl-10 pr-4 py-3 bg-[#FCFAF8] border border-[#DCD6CE] rounded-lg text-sm font-medium text-[#1C1917] focus:outline-none focus:border-[#1C1917] focus:bg-white transition-colors placeholder:text-[#9A9590] disabled:opacity-50"
-                  placeholder="Enter username"
+                  placeholder="admin@example.com"
                 />
               </div>
             </div>

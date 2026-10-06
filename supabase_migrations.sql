@@ -210,27 +210,40 @@ ALTER TABLE admin_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
+-- ADMIN USERS TABLE & AUTHORIZATION FUNCTION
+-- ============================================
+CREATE TABLE IF NOT EXISTS admin_users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  role VARCHAR(50) DEFAULT 'admin',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id)
+);
+
+ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "admin_read_admin_users" ON admin_users
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM admin_users WHERE user_id = auth.uid())
+  );
+
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.admin_users WHERE user_id = auth.uid()
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================
 -- CATEGORIES - PUBLIC READ, ADMIN WRITE
 -- ============================================
 CREATE POLICY "public_read_categories" ON categories
   FOR SELECT USING (active = true);
 
 CREATE POLICY "admin_manage_categories" ON categories
-  FOR ALL USING (auth.uid() IS NOT NULL);
-
--- Allow anon role to manage categories (needed because admin panel
--- uses anon key without Supabase Auth, so auth.uid() is NULL)
-CREATE POLICY "anon_select_all_categories" ON categories
-  FOR SELECT USING (true);
-
-CREATE POLICY "anon_insert_categories" ON categories
-  FOR INSERT WITH CHECK (true);
-
-CREATE POLICY "anon_update_categories" ON categories
-  FOR UPDATE USING (true);
-
-CREATE POLICY "anon_delete_categories" ON categories
-  FOR DELETE USING (true);
+  FOR ALL USING (public.is_admin());
 
 -- ============================================
 -- PRODUCTS - PUBLIC READ, ADMIN WRITE
@@ -240,21 +253,7 @@ CREATE POLICY "public_read_products" ON products
     category_id IN (SELECT id FROM categories WHERE active = true));
 
 CREATE POLICY "admin_manage_products" ON products
-  FOR ALL USING (auth.uid() IS NOT NULL);
-
--- Allow anon role to manage products (needed because admin panel
--- uses anon key without Supabase Auth, so auth.uid() is NULL)
-CREATE POLICY "anon_select_all_products" ON products
-  FOR SELECT USING (true);
-
-CREATE POLICY "anon_insert_products" ON products
-  FOR INSERT WITH CHECK (true);
-
-CREATE POLICY "anon_update_products" ON products
-  FOR UPDATE USING (true);
-
-CREATE POLICY "anon_delete_products" ON products
-  FOR DELETE USING (true);
+  FOR ALL USING (public.is_admin());
 
 -- ============================================
 -- PRODUCT_OPTIONS - PUBLIC READ, ADMIN WRITE
@@ -263,7 +262,7 @@ CREATE POLICY "public_read_product_options" ON product_options
   FOR SELECT USING (product_id IN (SELECT id FROM products WHERE active = true));
 
 CREATE POLICY "admin_manage_product_options" ON product_options
-  FOR ALL USING (auth.jwt() ->> 'role' = 'admin');
+  FOR ALL USING (public.is_admin());
 
 -- ============================================
 -- PRODUCT_OPTION_VALUES - PUBLIC READ, ADMIN WRITE
@@ -272,7 +271,7 @@ CREATE POLICY "public_read_option_values" ON product_option_values
   FOR SELECT USING (active = true);
 
 CREATE POLICY "admin_manage_option_values" ON product_option_values
-  FOR ALL USING (auth.jwt() ->> 'role' = 'admin');
+  FOR ALL USING (public.is_admin());
 
 -- ============================================
 -- PRODUCT_IMAGES - PUBLIC READ, ADMIN WRITE
@@ -281,13 +280,13 @@ CREATE POLICY "public_read_product_images" ON product_images
   FOR SELECT USING (product_id IN (SELECT id FROM products WHERE active = true));
 
 CREATE POLICY "admin_manage_product_images" ON product_images
-  FOR ALL USING (auth.jwt() ->> 'role' = 'admin');
+  FOR ALL USING (public.is_admin());
 
 -- ============================================
 -- ORDERS - ADMIN READ, AUTHENTICATED INSERT
 -- ============================================
 CREATE POLICY "admin_read_orders" ON orders
-  FOR SELECT USING (auth.jwt() ->> 'role' = 'admin');
+  FOR SELECT USING (public.is_admin());
 
 CREATE POLICY "customers_create_orders" ON orders
   FOR INSERT WITH CHECK (true);
@@ -299,14 +298,13 @@ CREATE POLICY "customers_read_own_orders" ON orders
   );
 
 CREATE POLICY "admin_update_orders" ON orders
-  FOR UPDATE USING (auth.jwt() ->> 'role' = 'admin');
+  FOR UPDATE USING (public.is_admin());
 
 -- ============================================
 -- ORDER_ITEMS - SAME AS ORDERS
 -- ============================================
 CREATE POLICY "admin_read_order_items" ON order_items
-  FOR SELECT USING (order_id IN (SELECT id FROM orders WHERE 
-    auth.jwt() ->> 'role' = 'admin'));
+  FOR SELECT USING (order_id IN (SELECT id FROM orders WHERE public.is_admin()));
 
 CREATE POLICY "customers_create_order_items" ON order_items
   FOR INSERT WITH CHECK (true);
@@ -315,7 +313,7 @@ CREATE POLICY "customers_create_order_items" ON order_items
 -- UPLOADED_CUSTOM_IMAGES - ADMIN READ, CUSTOMER UPLOAD
 -- ============================================
 CREATE POLICY "admin_read_images" ON uploaded_custom_images
-  FOR SELECT USING (auth.jwt() ->> 'role' = 'admin');
+  FOR SELECT USING (public.is_admin());
 
 CREATE POLICY "customers_upload_images" ON uploaded_custom_images
   FOR INSERT WITH CHECK (true);
@@ -324,7 +322,7 @@ CREATE POLICY "customers_upload_images" ON uploaded_custom_images
 -- ADMIN_SETTINGS - ADMIN ONLY
 -- ============================================
 CREATE POLICY "admin_manage_settings" ON admin_settings
-  FOR ALL USING (auth.jwt() ->> 'role' = 'admin');
+  FOR ALL USING (public.is_admin());
 
 CREATE POLICY "public_read_settings" ON admin_settings
   FOR SELECT USING (setting_key IN (
@@ -335,7 +333,7 @@ CREATE POLICY "public_read_settings" ON admin_settings
 -- AUDIT_LOGS - ADMIN READ, SYSTEM WRITE
 -- ============================================
 CREATE POLICY "admin_read_audit" ON audit_logs
-  FOR SELECT USING (auth.jwt() ->> 'role' = 'admin');
+  FOR SELECT USING (public.is_admin());
 
 -- ============================================
 -- DEFAULT SETTINGS

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../supabase';
 
 const AdminAuthContext = createContext();
 
@@ -10,99 +11,128 @@ export const useAdminAuth = () => {
   return context;
 };
 
-// Admin credentials from environment variables
-const ADMIN_CREDENTIALS = {
-  username: import.meta.env.VITE_ADMIN_USERNAME || 'chaitrika',
-  password: import.meta.env.VITE_ADMIN_PASSWORD || 'chaitrika@wrap0'
-};
-
-console.log('Admin credentials loaded:', {
-  username: ADMIN_CREDENTIALS.username,
-  password: ADMIN_CREDENTIALS.password ? '***set***' : 'not set'
-});
-
 export const AdminAuthProvider = ({ children }) => {
   const [adminUser, setAdminUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Initialize admin session on mount
+  // Check if a user is an admin by querying the admin_users table
+  const checkAdminStatus = async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('admin_users')
+        .select('role')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (error) throw error;
+      return !!data; // True if record exists
+    } catch (err) {
+      console.error('Error checking admin status:', err);
+      return false;
+    }
+  };
+
   useEffect(() => {
-    const initializeAdminSession = async () => {
+    let mounted = true;
+
+    const initializeAuth = async () => {
       try {
-        // Check if there's a stored admin session
-        const storedAdmin = localStorage.getItem('adminUser');
-        const loginTime = localStorage.getItem('adminLoginTime');
-        const currentTime = new Date().getTime();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        if (storedAdmin && loginTime) {
-          // Session expires after 24 hours
-          const timeDiff = currentTime - parseInt(loginTime);
-          if (timeDiff < 24 * 60 * 60 * 1000) {
-            setAdminUser(JSON.parse(storedAdmin));
-            setIsAuthenticated(true);
-            setError(null);
-          } else {
-            // Session expired
-            localStorage.removeItem('adminUser');
-            localStorage.removeItem('adminLoginTime');
-            setIsAuthenticated(false);
+        if (sessionError) throw sessionError;
+
+        if (session?.user) {
+          const isUserAdmin = await checkAdminStatus(session.user.id);
+          
+          if (mounted) {
+            if (isUserAdmin) {
+              setAdminUser(session.user);
+              setIsAuthenticated(true);
+            } else {
+              // User is authenticated but NOT an admin.
+              // We must not leave them logged in on the admin portal.
+              await supabase.auth.signOut();
+              setAdminUser(null);
+              setIsAuthenticated(false);
+            }
           }
         }
       } catch (err) {
-        console.error('Error initializing admin session:', err);
-        setError(err.message);
+        console.error('Auth initialization error:', err);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
 
-    initializeAdminSession();
+    initializeAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        setLoading(true);
+        const isUserAdmin = await checkAdminStatus(session.user.id);
+        
+        if (mounted) {
+          if (isUserAdmin) {
+            setAdminUser(session.user);
+            setIsAuthenticated(true);
+            setError(null);
+          } else {
+            // Un-authorize non-admins immediately
+            await supabase.auth.signOut();
+            setAdminUser(null);
+            setIsAuthenticated(false);
+            setError('Admin access required. This account does not have administrator privileges.');
+          }
+          setLoading(false);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        if (mounted) {
+          setAdminUser(null);
+          setIsAuthenticated(false);
+          setLoading(false);
+        }
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  // Admin login with username and password
-  const adminLogin = async (username, password) => {
+  // Admin login using Supabase Auth (Email/Password)
+  const adminLogin = async (email, password) => {
     try {
       setError(null);
       setLoading(true);
 
-      console.log('Login attempt with:', username);
-      console.log('Expected username:', ADMIN_CREDENTIALS.username);
-      console.log('Match:', username.toLowerCase() === ADMIN_CREDENTIALS.username.toLowerCase());
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-      // Validate credentials
-      const isValidUsername = username.toLowerCase() === ADMIN_CREDENTIALS.username.toLowerCase();
-      const isValidPassword = password === ADMIN_CREDENTIALS.password;
-
-      console.log('Username valid:', isValidUsername);
-      console.log('Password valid:', isValidPassword);
-
-      if (!isValidUsername || !isValidPassword) {
-        const msg = !isValidUsername ? 'Invalid username' : 'Invalid password';
-        setError('Invalid admin username or password');
-        return false;
+      if (signInError) {
+        throw signInError;
       }
 
-      // Create admin user object
-      const user = {
-        id: 'admin-' + Date.now(),
-        username: ADMIN_CREDENTIALS.username,
-        role: 'admin',
-        loginTime: new Date().toISOString()
-      };
+      // The onAuthStateChange listener will handle the admin check and set state
+      // However, we wait here for a brief moment to let the listener complete
+      // before returning success, or we do the check manually here to be safe.
+      
+      const isUserAdmin = await checkAdminStatus(data.user.id);
+      
+      if (!isUserAdmin) {
+        await supabase.auth.signOut();
+        throw new Error('Admin access required. This account does not have administrator privileges.');
+      }
 
-      // Store admin session
-      localStorage.setItem('adminUser', JSON.stringify(user));
-      localStorage.setItem('adminLoginTime', new Date().getTime().toString());
-
-      setAdminUser(user);
-      setIsAuthenticated(true);
-      setError(null);
       return true;
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.message);
+      setError(err.message || 'Invalid email or password');
       return false;
     } finally {
       setLoading(false);
@@ -113,19 +143,16 @@ export const AdminAuthProvider = ({ children }) => {
   const adminLogout = async () => {
     try {
       setError(null);
-      localStorage.removeItem('adminUser');
-      localStorage.removeItem('adminLoginTime');
-      setAdminUser(null);
-      setIsAuthenticated(false);
+      await supabase.auth.signOut();
     } catch (err) {
       console.error('Logout error:', err);
       setError(err.message);
     }
   };
 
-  // Check if current user is admin
+  // Check if current user is admin (used by routes)
   const isAdmin = () => {
-    return isAuthenticated && adminUser?.role === 'admin';
+    return isAuthenticated && adminUser !== null;
   };
 
   const value = {
