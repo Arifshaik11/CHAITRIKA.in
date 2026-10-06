@@ -32,9 +32,6 @@ export default function AdminLogin() {
     }
   };
 
-  const handleFillDemo = () => {
-    setUsername('chaitrika');
-    setPassword('chaitrika@wrap0');
   };
 
   return (
@@ -84,7 +81,7 @@ export default function AdminLogin() {
                   onChange={(e) => setUsername(e.target.value)}
                   disabled={loading || authLoading}
                   className="w-full pl-10 pr-4 py-3 bg-[#FCFAF8] border border-[#DCD6CE] rounded-lg text-sm font-medium text-[#1C1917] focus:outline-none focus:border-[#1C1917] focus:bg-white transition-colors placeholder:text-[#9A9590] disabled:opacity-50"
-                  placeholder="e.g. chaitrika"
+                  placeholder="Enter username"
                 />
               </div>
             </div>
@@ -116,20 +113,6 @@ export default function AdminLogin() {
             </button>
           </form>
 
-          {/* Quick Demo Credentials Info */}
-          <div className="mt-6 pt-5 border-t border-[#EFEBE6] flex items-center justify-between text-xs">
-            <div className="flex items-center gap-1.5 text-[#5A5550]">
-              <FiInfo className="w-4 h-4 text-[#B86B57]" />
-              <span>Default: <strong className="text-[#1C1917]">chaitrika</strong></span>
-            </div>
-            <button
-              type="button"
-              onClick={handleFillDemo}
-              className="text-[#B86B57] hover:text-[#9E5542] font-semibold underline underline-offset-2"
-            >
-              Fill Credentials
-            </button>
-          </div>
         </div>
       </div>
     </div>
