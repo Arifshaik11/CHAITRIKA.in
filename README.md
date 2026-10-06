@@ -3,7 +3,9 @@
 A modern, responsive e-commerce website for customized photo frames and accessories. Built with React and featuring a complete product customization system with WhatsApp integration for order processing.
 
 ## 🚀 Features
+ 
 
+ 
 ### Customer Features
 - **Product Catalog**: Browse magnetic photo frames, keychains, acrylic frames, and MDF frames
 - **Multiple Sizes**: Different size options for each product category
