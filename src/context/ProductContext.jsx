@@ -80,23 +80,20 @@ export const ProductProvider = ({ children }) => {
         throw fetchError;
       }
 
-      if (data && data.length > 0) {
+      if (data) {
         console.log('Products loaded from Supabase:', data.length, 'items');
         setProducts(data);
         localStorage.setItem('chaitrika_products', JSON.stringify(data));
       } else {
-        console.log('Supabase returned 0 products, using cached/mock products');
         const cached = localStorage.getItem('chaitrika_products');
-        const fallback = cached ? JSON.parse(cached) : defaultProducts;
-        setProducts(fallback.length > 0 ? fallback : defaultProducts);
+        setProducts(cached ? JSON.parse(cached) : defaultProducts);
       }
       setLoading(false);
     } catch (err) {
       console.error('Error fetching from Supabase, trying localStorage/defaultProducts:', err.message);
       
       const cached = localStorage.getItem('chaitrika_products');
-      const fallback = cached ? JSON.parse(cached) : defaultProducts;
-      setProducts(fallback.length > 0 ? fallback : defaultProducts);
+      setProducts(cached ? JSON.parse(cached) : defaultProducts);
       setLoading(false);
     }
   };
@@ -418,56 +415,41 @@ export const ProductProvider = ({ children }) => {
 
   const deleteProduct = async (id) => {
     try {
+      // IMPORTANT: Do NOT remove from state before confirming Supabase deletion
+      // This is the root cause of the bug: items disappear from UI but stay in DB
+      
       if (supabase && !String(id).startsWith('prod_')) {
         console.log('Deleting product from Supabase:', id);
 
-        // Delete product_images first (storage cleanup, safe to do explicitly)
-        try {
-          await supabase.from('product_images').delete().eq('product_id', id);
-        } catch (imgErr) {
-          console.warn('Could not delete product_images (non-fatal):', imgErr);
-        }
-
-        // Delete the product — with CASCADE DELETE on the FK constraint,
-        // order_items and uploaded_custom_images referencing this product
-        // are automatically deleted by the database.
+        // Delete the main product record FIRST (cascade will handle related tables)
         const { error: deleteError } = await supabase
           .from('products')
           .delete()
           .eq('id', id);
 
+        // Check for deletion error BEFORE updating React state
         if (deleteError) {
-          console.error('Delete error details:', deleteError);
+          console.error('Supabase DELETE failed:', deleteError);
           throw new Error(`Delete failed: ${deleteError.message}`);
         }
 
-        console.log('Product deleted successfully from Supabase');
-        
-        // Refresh all products from database to ensure complete sync
-        try {
-          const { data, error: fetchErr } = await supabase.from('products').select('*');
-          if (!fetchErr && data) {
-            setProducts(data);
-            localStorage.setItem('chaitrika_products', JSON.stringify(data));
-            console.log('Products refreshed after deletion');
-          }
-        } catch (refreshErr) {
-          console.warn('Could not refresh products after deletion:', refreshErr);
-        }
-      } else {
-        // Local fallback - just remove from state
-        setProducts((prev) => {
-          const updated = prev.filter((product) => product.id !== id);
-          localStorage.setItem('chaitrika_products', JSON.stringify(updated));
-          return updated;
-        });
+        console.log('Product successfully deleted from Supabase');
       }
 
-      // Remove from wishlist and comparison
-      setWishlist((prev) => prev.filter((item) => item !== id));
-      setComparisonList((prev) => prev.filter((item) => item.id !== id));
+      // Only remove from React state AFTER successful Supabase deletion
+      setProducts((prev) => {
+        const updated = prev.filter((product) => String(product.id) !== String(id));
+        localStorage.setItem('chaitrika_products', JSON.stringify(updated));
+        return updated;
+      });
+      setWishlist((prev) => prev.filter((item) => String(item) !== String(id)));
+      setComparisonList((prev) => prev.filter((item) => String(item.id) !== String(id)));
+
+      console.log('Product removed from React state and localStorage');
     } catch (err) {
       console.error('Error deleting product:', err);
+      // Re-fetch to restore accurate state if deletion failed
+      await fetchProducts();
       throw err;
     }
   };

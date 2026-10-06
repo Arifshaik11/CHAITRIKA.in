@@ -200,6 +200,8 @@ export const CategoryProvider = ({ children }) => {
   // Admin: Delete category
   const deleteCategory = async (id) => {
     try {
+      // IMPORTANT: Do NOT remove from state before confirming Supabase deletion
+      
       // If it's a localStorage ID (starts with "cat_"), just delete from localStorage
       if (id.startsWith('cat_')) {
         const updated = categories.filter(c => c.id !== id);
@@ -208,45 +210,32 @@ export const CategoryProvider = ({ children }) => {
         return;
       }
 
-      // Otherwise try Supabase
+      // For Supabase IDs, delete from database FIRST
       if (supabase) {
-        try {
-          const { error: deleteError } = await supabase
-            .from('categories')
-            .delete()
-            .eq('id', id);
+        console.log('Deleting category from Supabase:', id);
 
-          if (!deleteError) {
-            // Refresh all categories from database to ensure complete sync
-            try {
-              const { data, error: fetchErr } = await supabase.from('categories').select('*');
-              if (!fetchErr && data) {
-                setCategories(data);
-                localStorage.setItem('chaitrika_categories', JSON.stringify(data));
-                console.log('Categories refreshed after deletion');
-                return;
-              }
-            } catch (refreshErr) {
-              console.warn('Could not refresh categories after deletion:', refreshErr);
-            }
+        const { error: deleteError } = await supabase
+          .from('categories')
+          .delete()
+          .eq('id', id);
 
-            // Fallback: manually remove from state
-            const updated = categories.filter(c => c.id !== id);
-            setCategories(updated);
-            localStorage.setItem('chaitrika_categories', JSON.stringify(updated));
-            return;
-          }
-        } catch (err) {
-          console.warn('Supabase delete failed, using localStorage:', err.message);
+        // Check for deletion error BEFORE updating React state
+        if (deleteError) {
+          console.error('Supabase DELETE failed:', deleteError);
+          throw new Error(`Delete failed: ${deleteError.message}`);
         }
+
+        console.log('Category successfully deleted from Supabase');
       }
 
-      // Fallback to localStorage
+      // Only remove from React state AFTER successful Supabase deletion
       const updated = categories.filter(c => c.id !== id);
       setCategories(updated);
       localStorage.setItem('chaitrika_categories', JSON.stringify(updated));
     } catch (err) {
       console.error('Error deleting category:', err);
+      // Re-fetch to restore accurate state if deletion failed
+      await fetchCategories();
       throw err;
     }
   };
