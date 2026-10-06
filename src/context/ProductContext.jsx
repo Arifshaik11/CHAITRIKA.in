@@ -418,17 +418,19 @@ export const ProductProvider = ({ children }) => {
 
   const deleteProduct = async (id) => {
     try {
-      if (supabase) {
-        console.log('Attempting to delete product:', id);
+      if (supabase && !String(id).startsWith('prod_')) {
+        console.log('Deleting product from Supabase:', id);
 
-        // First clean up any product_images linked to this product
+        // Delete product_images first (storage cleanup, safe to do explicitly)
         try {
           await supabase.from('product_images').delete().eq('product_id', id);
         } catch (imgErr) {
-          console.warn('Could not delete product_images:', imgErr);
+          console.warn('Could not delete product_images (non-fatal):', imgErr);
         }
 
-        // Then delete the product itself from Supabase
+        // Delete the product — with CASCADE DELETE on the FK constraint,
+        // order_items and uploaded_custom_images referencing this product
+        // are automatically deleted by the database.
         const { error: deleteError } = await supabase
           .from('products')
           .delete()
@@ -442,7 +444,7 @@ export const ProductProvider = ({ children }) => {
         console.log('Product deleted successfully from Supabase');
       }
 
-      // Update state and localStorage
+      // Remove from React state and localStorage
       setProducts((prev) => {
         const updated = prev.filter((product) => product.id !== id);
         localStorage.setItem('chaitrika_products', JSON.stringify(updated));

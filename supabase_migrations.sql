@@ -116,7 +116,7 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE TABLE IF NOT EXISTS order_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-  product_id UUID NOT NULL REFERENCES products(id),
+  product_id UUID REFERENCES products(id) ON DELETE SET NULL,
   product_name VARCHAR(255) NOT NULL,
   quantity INT NOT NULL,
   unit_price DECIMAL(10, 2) NOT NULL,
@@ -132,7 +132,7 @@ CREATE TABLE IF NOT EXISTS uploaded_custom_images (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   order_item_id UUID NOT NULL REFERENCES order_items(id) ON DELETE CASCADE,
-  product_id UUID NOT NULL REFERENCES products(id),
+  product_id UUID REFERENCES products(id) ON DELETE SET NULL,
   image_url TEXT NOT NULL,
   image_original_name VARCHAR(255),
   file_size_bytes INT,
@@ -342,3 +342,25 @@ ON CONFLICT (slug) DO NOTHING;
 -- ============================================
 -- END OF MIGRATION
 -- ============================================
+
+-- ============================================
+-- FIX FOR PRODUCT DELETION FOREIGN KEY ISSUE
+-- Run this block in Supabase SQL Editor to apply:
+-- 1. Go to https://supabase.com/dashboard → your project → SQL Editor
+-- 2. Paste and run this entire block
+-- This changes order_items and uploaded_custom_images product_id FK
+-- to CASCADE DELETE so deleting a product also deletes its order items.
+-- ============================================
+
+-- Fix order_items: cascade delete when product is deleted
+ALTER TABLE order_items ALTER COLUMN product_id DROP NOT NULL;
+ALTER TABLE order_items DROP CONSTRAINT IF EXISTS order_items_product_id_fkey;
+ALTER TABLE order_items ADD CONSTRAINT order_items_product_id_fkey
+  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE;
+
+-- Fix uploaded_custom_images: cascade delete when product is deleted  
+ALTER TABLE uploaded_custom_images ALTER COLUMN product_id DROP NOT NULL;
+ALTER TABLE uploaded_custom_images DROP CONSTRAINT IF EXISTS uploaded_custom_images_product_id_fkey;
+ALTER TABLE uploaded_custom_images ADD CONSTRAINT uploaded_custom_images_product_id_fkey
+  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE;
+

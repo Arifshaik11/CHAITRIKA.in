@@ -150,16 +150,9 @@ const AdminProducts = () => {
   };
 
   const handleDeleteProduct = async (productId) => {
-    if (!window.confirm('Are you sure you want to delete this product?')) return;
-    
-    try {
-      if (supabase) {
-        await supabase
-          .from('product_images')
-          .delete()
-          .eq('product_id', productId);
-      }
+    if (!window.confirm('Are you sure you want to delete this product? This will also delete all related order items.')) return;
 
+    try {
       await deleteProduct(productId);
     } catch (err) {
       console.error('Delete error:', err);
